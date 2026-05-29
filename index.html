@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="theme-color" content="#F8F9FA"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<title>Driver App — Vehicle Manager</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#F0F2F5;color:#1A1A2E;font-family:'Segoe UI',system-ui,sans-serif;font-size:15px}
+:root{
+  --bg:#F0F2F5;--card:#FFFFFF;--card2:#F8F9FA;--accent:#2563EB;--accent-light:#EFF6FF;
+  --green:#059669;--green-light:#ECFDF5;--amber:#D97706;--amber-light:#FFFBEB;
+  --red:#DC2626;--red-light:#FEF2F2;--muted:#6B7280;--border:#E5E7EB;
+  --text:#111827;--text2:#374151;--shadow:0 1px 3px rgba(0,0,0,0.08),0 1px 2px rgba(0,0,0,0.04)
+}
+.screen{display:none;flex-direction:column;height:100vh;overflow:hidden}
+.screen.active{display:flex}
+
+/* LOGIN */
+#s-login{background:linear-gradient(160deg,#1E3A5F 0%,#2563EB 60%,#3B82F6 100%);align-items:center;justify-content:center;padding:24px}
+.login-logo{width:72px;height:72px;background:rgba(255,255,255,0.15);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:36px;margin-bottom:16px;backdrop-filter:blur(10px)}
+.login-title{font-size:24px;font-weight:700;color:#fff;margin-bottom:4px}
+.login-sub{font-size:13px;color:rgba(255,255,255,0.7);margin-bottom:32px}
+.login-card{background:#fff;border-radius:20px;padding:28px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.2)}
+.form-lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.form-inp{width:100%;background:var(--card2);border:1.5px solid var(--border);border-radius:10px;padding:13px 16px;color:var(--text);font-size:15px;outline:none;margin-bottom:14px;transition:border .2s}
+.form-inp:focus{border-color:var(--accent);background:#fff}
+.btn-full{width:100%;padding:15px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-size:15px;font-weight:600;cursor:pointer;transition:all .15s;box-shadow:0 4px 12px rgba(37,99,235,0.3)}
+.btn-full:active{transform:scale(.98);opacity:.9}
+.btn-full.green{background:var(--green);box-shadow:0 4px 12px rgba(5,150,105,0.3)}
+.btn-full.amber{background:var(--amber);box-shadow:0 4px 12px rgba(217,119,6,0.3)}
+.err-msg{background:var(--red-light);border:1px solid #FECACA;border-radius:10px;padding:10px 14px;font-size:13px;color:var(--red);margin-bottom:14px;display:none}
+
+/* TOPBAR */
+.topbar{background:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-shrink:0;box-shadow:var(--shadow)}
+.topbar-title{font-size:16px;font-weight:700;color:var(--text)}
+.topbar-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.avatar{width:38px;height:38px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;cursor:pointer}
+
+/* SCROLL */
+.scroll-area{flex:1;overflow-y:auto;padding:16px}
+
+/* HOME */
+.vehicle-card{background:linear-gradient(135deg,#1E3A5F,#2563EB);border-radius:16px;padding:20px;margin-bottom:16px;color:#fff}
+.vc-label{font-size:11px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.vc-name{font-size:20px;font-weight:700;margin-bottom:2px}
+.vc-plate{font-size:13px;color:rgba(255,255,255,0.7)}
+.vc-km{display:inline-flex;align-items:center;gap:6px;margin-top:12px;background:rgba(255,255,255,0.15);border-radius:8px;padding:7px 12px;font-size:13px;color:#fff;font-weight:600;backdrop-filter:blur(4px)}
+.action-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.action-btn{background:#fff;border-radius:14px;padding:16px 12px;border:1px solid var(--border);cursor:pointer;transition:all .15s;text-align:center;box-shadow:var(--shadow)}
+.action-btn:active{transform:scale(.97);background:var(--card2)}
+.action-btn .ab-icon{font-size:26px;margin-bottom:7px}
+.action-btn .ab-title{font-size:13px;font-weight:600;color:var(--text)}
+.action-btn .ab-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.section-lbl{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.recent-item{background:#fff;border-radius:12px;padding:14px;margin-bottom:8px;border:1px solid var(--border);box-shadow:var(--shadow)}
+.ri-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
+.ri-title{font-size:13px;font-weight:600;color:var(--text)}
+.ri-meta{font-size:11px;color:var(--muted)}
+.badge{font-size:10px;padding:3px 9px;border-radius:20px;font-weight:600}
+.badge-pending{background:var(--amber-light);color:var(--amber)}
+.badge-approved{background:var(--green-light);color:var(--green)}
+.badge-rejected{background:var(--red-light);color:var(--red)}
+
+/* FORM TOPBAR */
+.form-topbar{background:#fff;padding:14px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);flex-shrink:0;box-shadow:var(--shadow)}
+.back-btn{width:36px;height:36px;border-radius:10px;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.form-screen-title{font-size:16px;font-weight:700;color:var(--text)}
+
+/* SECTION CARDS */
+.section-card{background:#fff;border-radius:14px;padding:16px;margin-bottom:12px;border:1px solid var(--border);box-shadow:var(--shadow)}
+.sc-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* ITEM ROWS */
+.item-row{background:var(--card2);border-radius:10px;padding:12px;margin-bottom:8px;border:1px solid var(--border)}
+.item-row .form-inp{background:#fff;margin-bottom:8px}
+.item-row .form-inp:last-child{margin-bottom:0}
+.btn-sm{padding:8px 14px;border-radius:8px;border:none;font-size:12px;font-weight:600;cursor:pointer}
+.btn-add{background:var(--accent-light);color:var(--accent)}
+.btn-del{background:var(--red-light);color:var(--red)}
+
+/* LOCATION */
+.location-row{display:flex;align-items:center;gap:10px;background:var(--card2);border-radius:10px;padding:12px;border:1px solid var(--border)}
+.loc-status{flex:1;font-size:12px;color:var(--muted)}
+.loc-status.got{color:var(--green);font-weight:600}
+.btn-loc{padding:8px 14px;border-radius:8px;border:none;background:var(--accent-light);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer}
+.submit-bar{padding:14px 16px;background:#fff;border-top:1px solid var(--border);flex-shrink:0}
+
+/* TABS */
+.tabs{display:flex;background:#fff;padding:0 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.tab{padding:13px 14px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* SUCCESS */
+#s-success{background:var(--bg);align-items:center;justify-content:center;padding:24px;text-align:center}
+.success-icon{width:80px;height:80px;background:var(--green-light);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 16px}
+.success-title{font-size:22px;font-weight:700;margin-bottom:8px;color:var(--text)}
+.success-sub{font-size:14px;color:var(--muted);margin-bottom:28px;line-height:1.6}
+
+/* INVOICE */
+#s-invoice{background:var(--bg)}
+.invoice-box{background:#fff;margin:16px;border-radius:16px;padding:24px;border:1px solid var(--border);box-shadow:var(--shadow)}
+.invoice-header{text-align:center;border-bottom:2px solid var(--border);padding-bottom:16px;margin-bottom:16px}
+.invoice-title{font-size:20px;font-weight:700;color:var(--text)}
+.invoice-sub{font-size:12px;color:var(--muted);margin-top:4px}
+.invoice-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F3F4F6;font-size:13px}
+.invoice-row:last-child{border-bottom:none}
+.invoice-label{color:var(--muted)}
+.invoice-val{font-weight:600;color:var(--text)}
+.invoice-total{display:flex;justify-content:space-between;padding:12px 0;font-size:16px;font-weight:700;border-top:2px solid var(--border);margin-top:8px}
+.invoice-items{background:var(--card2);border-radius:10px;padding:12px;margin:12px 0}
+.inv-item{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid var(--border)}
+.inv-item:last-child{border-bottom:none}
+.invoice-footer{text-align:center;margin-top:16px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);padding-top:12px}
+.print-bar{padding:14px 16px;background:#fff;border-top:1px solid var(--border);flex-shrink:0;display:flex;gap:10px}
+
+/* RECEIPT */
+.receipt-upload{border:2px dashed var(--border);border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:all .2s;background:var(--card2)}
+.receipt-upload:hover{border-color:var(--accent);background:var(--accent-light)}
+.receipt-upload input{display:none}
+.receipt-preview{border-radius:10px;overflow:hidden;margin-top:10px;position:relative}
+.receipt-preview img{width:100%;max-height:200px;object-fit:cover;border-radius:10px;display:block}
+.receipt-del{position:absolute;top:6px;right:6px;background:var(--red);color:#fff;border:none;border-radius:50%;width:26px;height:26px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.receipt-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.receipt-thumb{position:relative;width:80px;height:80px}
+.receipt-thumb img{width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border)}
+.receipt-thumb button{position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer}
+
+/* LOADER */
+.loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,0.8);display:none;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:12px;backdrop-filter:blur(4px)}
+.loading-overlay.show{display:flex}
+.loader{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+.loading-txt{font-size:14px;color:var(--muted);font-weight:500}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* MAP */
+.map-preview{height:80px;border-radius:10px;overflow:hidden;margin-top:8px}
+.map-preview iframe{width:100%;height:100%;border:none}
+
+/* GREETING */
+.greeting{font-size:18px;font-weight:700;color:var(--text);margin-bottom:2px}
+.greeting-sub{font-size:13px;color:var(--muted);margin-bottom:18px}
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loader">
+  <div class="loader"></div>
+  <div class="loading-txt" id="loader-txt">Please wait...</div>
+</div>
+
+<!-- ═══ LOGIN ═══ -->
+<div class="screen active" id="s-login">
+  <div class="login-logo">🚗</div>
+  <div class="login-title">Driver Portal</div>
+  <div class="login-sub">Vehicle Maintenance System</div>
+  <div class="login-card">
+    <div class="err-msg" id="login-err"></div>
+    <label class="form-lbl">Driver ID</label>
+    <input class="form-inp" id="inp-id" placeholder="e.g. D001" autocomplete="off"/>
+    <label class="form-lbl">PIN</label>
+    <input class="form-inp" id="inp-pin" type="password" placeholder="4-digit PIN" inputmode="numeric" maxlength="4"/>
+    <button class="btn-full" onclick="doLogin()">Login →</button>
+  </div>
+</div>
+
+<!-- ═══ HOME ═══ -->
+<div class="screen" id="s-home">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" id="home-title">Welcome</div>
+      <div class="topbar-sub" id="home-sub">Today</div>
+    </div>
+    <div class="avatar" id="home-avatar" onclick="doLogout()">DR</div>
+  </div>
+  <div class="scroll-area">
+    <div class="greeting" id="home-greeting">Good morning!</div>
+    <div class="greeting-sub">What would you like to log today?</div>
+    <div class="vehicle-card">
+      <div class="vc-label">Assigned Vehicle</div>
+      <div class="vc-name" id="veh-name">—</div>
+      <div class="vc-plate" id="veh-plate">—</div>
+      <div class="vc-km">🔢 <span id="veh-km">—</span></div>
+    </div>
+    <div class="action-grid">
+      <div class="action-btn" onclick="showMaintForm()">
+        <div class="ab-icon">🔧</div>
+        <div class="ab-title">Maintenance</div>
+        <div class="ab-sub">Log service</div>
+      </div>
+      <div class="action-btn" onclick="showFuelForm()">
+        <div class="ab-icon">⛽</div>
+        <div class="ab-title">Fuel Log</div>
+        <div class="ab-sub">Record refuel</div>
+      </div>
+      <div class="action-btn" onclick="showParkingForm()">
+        <div class="ab-icon">🅿️</div>
+        <div class="ab-title">Parking</div>
+        <div class="ab-sub">Record parking</div>
+      </div>
+      <div class="action-btn" onclick="showCarWashForm()">
+        <div class="ab-icon">🚿</div>
+        <div class="ab-title">Car Wash</div>
+        <div class="ab-sub">Record wash</div>
+      </div>
+      <div class="action-btn" onclick="showHistory()">
+        <div class="ab-icon">📋</div>
+        <div class="ab-title">History</div>
+        <div class="ab-sub">My submissions</div>
+      </div>
+    </div>
+    <div class="section-lbl">Recent Submissions</div>
+    <div id="recent-list"><div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">Loading...</div></div>
+  </div>
+</div>
+
+<!-- ═══ MAINTENANCE FORM ═══ -->
+<div class="screen" id="s-maint">
+  <div class="form-topbar">
+    <button class="back-btn" onclick="goHome()">←</button>
+    <div class="form-screen-title">🔧 Log Maintenance</div>
+  </div>
+  <div class="scroll-area">
+    <div class="section-card">
+      <div class="sc-title">Basic Info</div>
+      <label class="form-lbl">Date</label>
+      <input class="form-inp" id="m-date" type="date"/>
+      <label class="form-lbl">Odometer Reading (km)</label>
+      <input class="form-inp" id="m-odo" type="number" placeholder="e.g. 45200" inputmode="numeric"/>
+    </div>
+    <div class="section-card">
+      <div class="sc-title">Maintenance Items</div>
+      <div id="item-list"></div>
+      <button class="btn-sm btn-add" onclick="addItem()" style="width:100%;padding:12px;margin-top:4px">+ Add Item</button>
+    </div>
+    <div class="section-card">
+      <div class="sc-title">Location (optional)</div>
+      <div class="location-row">
+        <div class="loc-status" id="loc-status">Not captured</div>
+        <button class="btn-loc" onclick="getLocation()">📍 Get GPS</button>
+      </div>
+      <div class="map-preview" id="map-preview" style="display:none"></div>
+    </div>
+    <div class="section-card">
+      <div class="sc-title">📎 Receipts (optional)</div>
+      <div class="receipt-list" id="m-receipt-list"></div>
+      <div class="receipt-upload" onclick="document.getElementById('m-receipt-input').click()">
+        <input type="file" id="m-receipt-input" accept="image/*" multiple onchange="addReceipts('m',this)"/>
+        <div style="font-size:24px;margin-bottom:6px">📎</div>
+        <div style="font-size:13px;color:var(--muted)">Tap to upload receipts from gallery</div>
+      </div>
+    </div>
+    <div class="section-card">
+      <div class="sc-title">Notes (optional)</div>
+      <textarea class="form-inp" id="m-notes" rows="3" placeholder="Any notes..." style="resize:none"></textarea>
+    </div>
+  </div>
+  <div class="submit-bar">
+    <button class="btn-full green" onclick="submitMaintenance()">✅ Submit for Approval</button>
+  </div>
+</div>
+
+<!-- ═══ FUEL FORM ═══ -->
+<div class="screen" id="s-fuel">
+  <div class="form-topbar">
+    <button class="back-btn" onclick="goHome()">←</button>
+    <div class="form-screen-title">⛽ Fuel Log</div>
+  </div>
+  <div class="scroll-area">
+    <div class="section-card">
+      <div class="sc-title">Fuel Details</div>
+      <label class="form-lbl">Date</label>
+      <input class="form-inp" id="f-date" type="date"/>
+      <label class="form-lbl">Odometer (km)</label>
+      <input class="form-inp" id="f-odo" type="number" placeholder="e.g. 45200" inputmode="numeric"/>
+      <div class="form-row">
+        <div>
+          <label class="form-lbl">Liters</label>
+          <input class="form-inp" id="f-liters" type="number" placeholder="0.0" inputmode="decimal"/>
+        </div>
+        <div>
+          <label class="form-lbl">Cost (SAR)</label>
+          <input class="form-inp" id="f-cost" type="number" placeholder="0" inputmode="decimal"/>
+        </div>
+      </div>
+      <label class="form-lbl">Station Name</label>
+      <input class="form-inp" id="f-station" placeholder="e.g. ADNOC Station"/>
+    </div>
+    <div class="section-card">
+      <div class="sc-title">Location (optional)</div>
+      <div class="location-row">
+        <div class="loc-status" id="f-loc-status">Not captured</div>
+        <button class="btn-loc" onclick="getFuelLoc()">📍 Get GPS</button>
+      </div>
+    </div>
+    <div class="section-card">
+      <div class="sc-title">📎 Receipts (optional)</div>
+      <div class="receipt-list" id="f-receipt-list"></div>
+      <div class="receipt-upload" onclick="document.getElementById('f-receipt-input').click()">
+        <input type="file" id="f-receipt-input" accept="image/*" multiple onchange="addReceipts('f',this)"/>
+        <div style="font-size:24px;margin-bottom:6px">📎</div>
+        <div style="font-size:13px;color:var(--muted)">Tap to upload receipts from gallery</div>
+      </div>
+    </div>
+    <div class="section-card">
+      <div class="sc-title">Notes (optional)</div>
+      <textarea class="form-inp" id="f-notes" rows="2" placeholder="Notes..." style="resize:none"></textarea>
+    </div>
+  </div>
+  <div class="submit-bar">
+    <button class="btn-full amber" onclick="submitFuel()">⛽ Submit Fuel Log</button>
+  </div>
+</div>
+
+<!-- ═══ PARKING FORM ═══ -->
+<div class="screen" id="s-parking">
+  <div class="form-topbar">
+    <button class="back-btn" onclick="goHome()">←</button>
+    <div class="form-screen-title">🅿️ Parking Log</div>
+  </div>
+  <div class="scroll-area">
+    <div class="section-card">
+      <div class="sc-title">Parking Details</div>
+      <label class="form-lbl">Date</label>
+      <input class="form-inp" id="p-date" type="date"/>
+      <label class="form-lbl">Location / Place Name</label>
+      <input class="form-inp" id="p-place" placeholder="e.g. City Center Mall"/>
+      <div class="form-row">
+        <div>
+          <label class="form-lbl">Duration (hours)</label>
+          <input class="form-inp" id="p-hours" type="number" placeholder="0" inputmode="decimal"/>
+        </div>
+        <div>
+          <label class="form-lbl">Amount (SAR)</label>
+          <input class="form-inp" id="p-amount" type="number" placeholder="0" inputmode="decimal"/>
+        </div>
+      </div>
+      <label class="form-lbl">Receipt No. (optional)</label>
+      <input class="form-inp" id="p-receipt" placeholder="e.g. RCP-001"/>
+    </div>
+    <div class="section-card">
+      <div class="sc-title">Location (optional)</div>
+      <div class="location-row">
+        <div class="loc-status" id="p-loc-status">Not captured</div>
+        <button class="btn-loc" onclick="getParkingLoc()">📍 Get GPS</button>
+      </div>
+    </div>
+    <div class="section-card">
+      <div class="sc-title">📎 Receipts (optional)</div>
+      <div class="receipt-list" id="p-receipt-list"></div>
+      <div class="receipt-upload" onclick="document.getElementById('p-receipt-input').click()">
+        <input type="file" id="p-receipt-input" accept="image/*" multiple onchange="addReceipts('p',this)"/>
+        <div style="font-size:24px;margin-bottom:6px">📎</div>
+        <div style="font-size:13px;color:var(--muted)">Tap to upload receipts from gallery</div>
+      </div>
+    </div>
+    <div class="section-card">
+      <div class="sc-title">Notes (optional)</div>
+      <textarea class="form-inp" id="p-notes" rows="2" placeholder="Notes..." style="resize:none"></textarea>
+    </div>
+  </div>
+  <div class="submit-bar">
+    <button class="btn-full" style="background:#7C3AED;box-shadow:0 4px 12px rgba(124,58,237,0.3)" onclick="submitParking()">🅿️ Submit Parking Log</button>
+  </div>
+</div>
+
+<!-- ═══ CAR WASH FORM ═══ -->
+<div class="screen" id="s-carwash">
+  <div class="form-topbar">
+    <button class="back-btn" onclick="goHome()">←</button>
+    <div class="form-screen-title">🚿 Car Wash Log</div>
+  </div>
+  <div class="scroll-area">
+    <div class="section-card">
+      <div class="sc-title">Car Wash Details</div>
+      <label class="form-lbl">Date</label>
+      <input class="form-inp" id="cw-date" type="date"/>
+      <label class="form-lbl">Wash Type</label>
+      <select class="form-inp" id="cw-type">
+        <option value="Basic Wash">Basic Wash</option>
+        <option value="Full Wash">Full Wash</option>
+        <option value="Interior Clean">Interior Clean</option>
+        <option value="Full Detail">Full Detail</option>
+        <option value="Polish & Wax">Polish & Wax</option>
+      </select>
+      <label class="form-lbl">Wash Center Name</label>
+      <input class="form-inp" id="cw-center" placeholder="e.g. Quick Wash Center"/>
+      <label class="form-lbl">Amount (SAR)</label>
+      <input class="form-inp" id="cw-amount" type="number" placeholder="0" inputmode="decimal"/>
+    </div>
+    <div class="section-card">
+      <div class="sc-title">📎 Receipts (optional)</div>
+      <div class="receipt-list" id="cw-receipt-list"></div>
+      <div class="receipt-upload" onclick="document.getElementById('cw-receipt-input').click()">
+        <input type="file" id="cw-receipt-input" accept="image/*" multiple onchange="addReceipts('cw',this)"/>
+        <div style="font-size:24px;margin-bottom:6px">📎</div>
+        <div style="font-size:13px;color:var(--muted)">Tap to upload receipts from gallery</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px">Multiple images supported</div>
+      </div>
+    </div>
+    <div class="section-card">
+      <div class="sc-title">Notes (optional)</div>
+      <textarea class="form-inp" id="cw-notes" rows="2" placeholder="Notes..." style="resize:none"></textarea>
+    </div>
+  </div>
+  <div class="submit-bar">
+    <button class="btn-full" style="background:#0891B2;box-shadow:0 4px 12px rgba(8,145,178,0.3)" onclick="submitCarWash()">🚿 Submit Car Wash Log</button>
+  </div>
+</div>
+
+<!-- ═══ HISTORY ═══ -->
+<div class="screen" id="s-history">
+  <div class="form-topbar">
+    <button class="back-btn" onclick="goHome()">←</button>
+    <div class="form-screen-title">📋 My Submissions</div>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="filterHistory('all',this)">All</div>
+    <div class="tab" onclick="filterHistory('pending',this)">Pending</div>
+    <div class="tab" onclick="filterHistory('approved',this)">Approved</div>
+    <div class="tab" onclick="filterHistory('rejected',this)">Rejected</div>
+  </div>
+  <div class="scroll-area" id="history-list"></div>
+</div>
+
+<!-- ═══ SUCCESS ═══ -->
+<div class="screen" id="s-success">
+  <div class="form-topbar">
+    <button class="back-btn" onclick="goHome()">←</button>
+    <div class="form-screen-title">Submission</div>
+  </div>
+  <div class="scroll-area" style="display:flex;flex-direction:column;align-items:center;justify-content:center">
+    <div class="success-icon">✅</div>
+    <div class="success-title">Submitted!</div>
+    <div class="success-sub" id="success-msg">Submitted successfully.</div>
+    <button class="btn-full" style="max-width:280px;margin-bottom:12px" onclick="showInvoice()">🧾 View Invoice</button>
+    <button class="btn-full" style="max-width:280px;background:var(--card2);color:var(--text);border:1px solid var(--border);box-shadow:none" onclick="goHome()">Back to Home</button>
+  </div>
+</div>
+
+<!-- ═══ INVOICE ═══ -->
+<div class="screen" id="s-invoice">
+  <div class="form-topbar">
+    <button class="back-btn" onclick="show('s-success')">←</button>
+    <div class="form-screen-title">🧾 Invoice / Slip</div>
+  </div>
+  <div class="scroll-area">
+    <div class="invoice-box" id="invoice-content">
+      <!-- Generated dynamically -->
+    </div>
+  </div>
+  <div class="print-bar">
+    <button class="btn-full green" onclick="printInvoice()" style="flex:1">🖨️ Print / Save PDF</button>
+    <button class="btn-full" onclick="shareInvoice()" style="flex:1;background:var(--accent-light);color:var(--accent);box-shadow:none">📤 Share</button>
+  </div>
+</div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbzTjJ5S0v2noBcYRsO28KRTMDVwkzYLw0dW61cZuMtFWi5iPE5BIBKzQiyPRnTHjWTC/exec";
+
+let driver = null;
+let gpsData = {lat:null,lng:null};
+let fuelGps = {lat:null,lng:null};
+let parkGps = {lat:null,lng:null};
+let items = [];
+let allHistory = [];
+let lastSubmission = null;
+
+function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+function loading(on,txt="Please wait..."){ document.getElementById('loader').classList.toggle('show',on); document.getElementById('loader-txt').textContent=txt; }
+
+function api(action, body={}){
+  return new Promise((resolve,reject)=>{
+    const cbName='cb_'+Date.now();
+    const payload=JSON.stringify({action,...body});
+    const url=API_URL+'?action='+action+'&data='+encodeURIComponent(payload)+'&callback='+cbName;
+    window[cbName]=function(data){ delete window[cbName]; document.getElementById('jsonp-'+cbName)?.remove(); resolve(data); };
+    const s=document.createElement('script'); s.id='jsonp-'+cbName; s.src=url;
+    s.onerror=()=>{ delete window[cbName]; reject(new Error('Network error')); };
+    document.body.appendChild(s);
+    setTimeout(()=>{ if(window[cbName]){ delete window[cbName]; document.getElementById('jsonp-'+cbName)?.remove(); reject(new Error('Timeout')); }},15000);
+  });
+}
+
+// ── RECEIPTS ──
+let receipts = {m:[], f:[], p:[], cw:[]};
+
+function addReceipts(prefix, input) {
+  const files = Array.from(input.files);
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      // Compress image before storing
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX = 800;
+        let w = img.width, h = img.height;
+        if (w > MAX) { h = h * MAX / w; w = MAX; }
+        if (h > MAX) { w = w * MAX / h; h = MAX; }
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        const compressed = canvas.toDataURL('image/jpeg', 0.5);
+        receipts[prefix].push({name: file.name, data: compressed});
+        renderReceiptList(prefix);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value = '';
+}
+
+function renderReceiptList(prefix) {
+  const el = document.getElementById(prefix + '-receipt-list');
+  if (!el) return;
+  el.innerHTML = receipts[prefix].map((r, i) => `
+    <div class="receipt-thumb">
+      <img src="${r.data}" alt="Receipt ${i+1}"/>
+      <button onclick="removeReceipt('${prefix}',${i})">×</button>
+    </div>`).join('');
+}
+
+function removeReceipt(prefix, idx) {
+  receipts[prefix].splice(idx, 1);
+  renderReceiptList(prefix);
+}
+
+function clearReceipts(prefix) {
+  receipts[prefix] = [];
+  renderReceiptList(prefix);
+}
+
+// ── LOGIN ──
+async function doLogin(){
+  const id=document.getElementById('inp-id').value.trim();
+  const pin=document.getElementById('inp-pin').value.trim();
+  const err=document.getElementById('login-err'); err.style.display='none';
+  if(!id||!pin){ err.textContent="Enter ID and PIN"; err.style.display='block'; return; }
+  loading(true,"Logging in...");
+  try{
+    const res=await api('login',{driver_id:id,pin});
+    if(res.success){ driver=res.driver; localStorage.setItem('driver',JSON.stringify(driver)); initHome(); show('s-home'); }
+    else{ err.textContent=res.error||"Invalid ID or PIN"; err.style.display='block'; }
+  }catch(e){ err.textContent="Connection failed. Check internet."; err.style.display='block'; }
+  loading(false);
+}
+function doLogout(){ if(!confirm("Logout?")) return; driver=null; localStorage.removeItem('driver'); show('s-login'); }
+
+// ── HOME ──
+function initHome(){
+  if(!driver) return;
+  const h=new Date().getHours();
+  document.getElementById('home-greeting').textContent=(h<12?"Good morning":h<17?"Good afternoon":"Good evening")+", "+driver.name.split(' ')[0]+"!";
+  document.getElementById('home-title').textContent=driver.name;
+  document.getElementById('home-sub').textContent=new Date().toLocaleDateString('en',{weekday:'long',month:'short',day:'numeric'});
+  document.getElementById('home-avatar').textContent=driver.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+  document.getElementById('veh-name').textContent=driver.vehicle_model||'N/A';
+  document.getElementById('veh-plate').textContent=driver.vehicle_plate||'';
+  document.getElementById('veh-km').textContent='Check latest odometer below';
+  loadHistory();
+}
+
+// ── MAINTENANCE ──
+function showMaintForm(){
+  items=[]; renderItems();
+  document.getElementById('m-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('m-odo').value='';
+  document.getElementById('m-notes').value='';
+  document.getElementById('loc-status').textContent='Not captured';
+  document.getElementById('loc-status').className='loc-status';
+  document.getElementById('map-preview').style.display='none';
+  gpsData={lat:null,lng:null};
+  addItem(); show('s-maint');
+}
+function addItem(){ items.push({name:'',qty:'',amount:''}); renderItems(); }
+function renderItems(){
+  document.getElementById('item-list').innerHTML=items.map((it,i)=>`
+    <div class="item-row">
+      <input class="form-inp" placeholder="Item (e.g. Engine Oil, Brake Pad)" value="${it.name}" oninput="items[${i}].name=this.value"/>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <input class="form-inp" placeholder="Qty (e.g. 4L)" value="${it.qty}" oninput="items[${i}].qty=this.value"/>
+        <input class="form-inp" type="number" placeholder="SAR" value="${it.amount}" inputmode="decimal" oninput="items[${i}].amount=this.value"/>
+      </div>
+      ${items.length>1?`<button class="btn-sm btn-del" onclick="removeItem(${i})" style="width:100%;margin-top:6px">Remove</button>`:''}
+    </div>`).join('');
+}
+function removeItem(i){ items.splice(i,1); renderItems(); }
+function getLocation(){
+  document.getElementById('loc-status').textContent='Getting GPS...';
+  navigator.geolocation.getCurrentPosition(pos=>{
+    gpsData={lat:pos.coords.latitude,lng:pos.coords.longitude};
+    document.getElementById('loc-status').textContent=`📍 ${gpsData.lat.toFixed(5)}, ${gpsData.lng.toFixed(5)}`;
+    document.getElementById('loc-status').className='loc-status got';
+    const mp=document.getElementById('map-preview'); mp.style.display='block';
+    mp.innerHTML=`<iframe src="https://maps.google.com/maps?q=${gpsData.lat},${gpsData.lng}&z=15&output=embed" loading="lazy"></iframe>`;
+  },()=>{ document.getElementById('loc-status').textContent='GPS failed'; });
+}
+async function submitMaintenance(){
+  const odo=document.getElementById('m-odo').value; const date=document.getElementById('m-date').value;
+  if(!date||!odo){ alert("Enter date and odometer"); return; }
+  const valid=items.filter(i=>i.name.trim());
+  if(!valid.length){ alert("Add at least one item"); return; }
+  loading(true,"Submitting...");
+  try{
+    // Store receipts locally
+    const mReceiptData = receipts['m'].map(r=>r.data);
+    if(mReceiptData.length) localStorage.setItem('receipts_'+Date.now(), JSON.stringify(mReceiptData));
+    const mNotes = document.getElementById('m-notes').value.trim();
+    const mNotesWithReceipt = mReceiptData.length ? mNotes + (mNotes?' | ':'')+`📎 ${mReceiptData.length} receipt(s) attached` : mNotes;
+    const res=await api('submit',{driver_id:driver.id,driver_name:driver.name,vehicle_plate:driver.vehicle_plate,vehicle_model:driver.vehicle_model,date,odometer:parseInt(odo),fuel_liters:0,fuel_cost:0,latitude:gpsData.lat,longitude:gpsData.lng,items:valid,notes:mNotesWithReceipt,type:'maintenance',receipt_count:mReceiptData.length});
+    if(res.success){
+      lastSubmission={type:'maintenance',id:res.id,date,odometer:parseInt(odo),items:valid,notes:document.getElementById('m-notes').value.trim(),driver_name:driver.name,vehicle:driver.vehicle_model,plate:driver.vehicle_plate,receipts:mReceiptData};
+      if(mReceiptData.length){ loading(true,'Uploading receipts...'); await uploadReceiptsForRecord('m',res.id,driver.name); loading(false); }
+      clearReceipts('m');
+      document.getElementById('success-msg').innerHTML=`Maintenance record submitted.<br><strong>Ref: ${res.id}</strong><br>Manager will review shortly.`;
+      show('s-success');
+    } else alert("Error: "+(res.error||"Unknown"));
+  }catch(e){ alert("Connection failed"); }
+  loading(false);
+}
+
+// ── FUEL ──
+function showFuelForm(){
+  document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
+  ['f-odo','f-liters','f-cost','f-station','f-notes'].forEach(id=>document.getElementById(id).value='');
+  fuelGps={lat:null,lng:null};
+  document.getElementById('f-loc-status').textContent='Not captured';
+  document.getElementById('f-loc-status').className='loc-status';
+  show('s-fuel');
+}
+function getFuelLoc(){
+  navigator.geolocation.getCurrentPosition(pos=>{
+    fuelGps={lat:pos.coords.latitude,lng:pos.coords.longitude};
+    document.getElementById('f-loc-status').textContent=`📍 ${fuelGps.lat.toFixed(5)}, ${fuelGps.lng.toFixed(5)}`;
+    document.getElementById('f-loc-status').className='loc-status got';
+  },()=>{ document.getElementById('f-loc-status').textContent='GPS failed'; });
+}
+async function submitFuel(){
+  const odo=document.getElementById('f-odo').value; const date=document.getElementById('f-date').value;
+  const liters=document.getElementById('f-liters').value; const cost=document.getElementById('f-cost').value;
+  if(!date||!odo||!liters){ alert("Enter date, odometer and liters"); return; }
+  loading(true,"Submitting fuel log...");
+  const station=document.getElementById('f-station').value||'Station';
+  const fItems=[{name:`Fuel — ${station}`,qty:liters+'L',amount:parseFloat(cost)||0}];
+  try{
+    const fReceiptData = receipts['f'].map(r=>r.data);
+    const fNotes = document.getElementById('f-notes').value.trim();
+    const fNotesWithReceipt = fReceiptData.length ? fNotes + (fNotes?' | ':'')+`📎 ${fReceiptData.length} receipt(s)` : fNotes;
+    const res=await api('submit',{driver_id:driver.id,driver_name:driver.name,vehicle_plate:driver.vehicle_plate,vehicle_model:driver.vehicle_model,date,odometer:parseInt(odo),fuel_liters:parseFloat(liters),fuel_cost:parseFloat(cost)||0,latitude:fuelGps.lat,longitude:fuelGps.lng,items:fItems,notes:fNotesWithReceipt,type:'fuel',receipt_count:fReceiptData.length});
+    if(res.success){
+      lastSubmission={type:'fuel',id:res.id,date,odometer:parseInt(odo),liters:parseFloat(liters),cost:parseFloat(cost)||0,station,notes:document.getElementById('f-notes').value.trim(),driver_name:driver.name,vehicle:driver.vehicle_model,plate:driver.vehicle_plate,receipts:fReceiptData};
+      if(fReceiptData.length){ loading(true,'Uploading receipts...'); await uploadReceiptsForRecord('f',res.id,driver.name); loading(false); }
+      clearReceipts('f');
+      document.getElementById('success-msg').innerHTML=`Fuel log submitted.<br><strong>Ref: ${res.id}</strong>`;
+      show('s-success');
+    } else alert("Error: "+(res.error||"Unknown"));
+  }catch(e){ alert("Connection failed"); }
+  loading(false);
+}
+
+// ── PARKING ──
+function showParkingForm(){
+  document.getElementById('p-date').value=new Date().toISOString().split('T')[0];
+  ['p-place','p-hours','p-amount','p-receipt','p-notes'].forEach(id=>document.getElementById(id).value='');
+  parkGps={lat:null,lng:null};
+  document.getElementById('p-loc-status').textContent='Not captured';
+  document.getElementById('p-loc-status').className='loc-status';
+  show('s-parking');
+}
+function getParkingLoc(){
+  navigator.geolocation.getCurrentPosition(pos=>{
+    parkGps={lat:pos.coords.latitude,lng:pos.coords.longitude};
+    document.getElementById('p-loc-status').textContent=`📍 ${parkGps.lat.toFixed(5)}, ${parkGps.lng.toFixed(5)}`;
+    document.getElementById('p-loc-status').className='loc-status got';
+  },()=>{ document.getElementById('p-loc-status').textContent='GPS failed'; });
+}
+async function submitParking(){
+  const date=document.getElementById('p-date').value; const amount=document.getElementById('p-amount').value;
+  const place=document.getElementById('p-place').value;
+  if(!date||!place){ alert("Enter date and location"); return; }
+  loading(true,"Submitting parking...");
+  const hrs=document.getElementById('p-hours').value; const rcpt=document.getElementById('p-receipt').value;
+  const pItems=[{name:`Parking — ${place}`,qty:hrs?hrs+'h':'',amount:parseFloat(amount)||0}];
+  try{
+    const res=await api('submit',{driver_id:driver.id,driver_name:driver.name,vehicle_plate:driver.vehicle_plate,vehicle_model:driver.vehicle_model,date,odometer:0,fuel_liters:0,fuel_cost:0,latitude:parkGps.lat,longitude:parkGps.lng,items:pItems,notes:(rcpt?`Receipt: ${rcpt}  `:'')+ document.getElementById('p-notes').value.trim(),type:'parking',receipts:receipts['p'].map(r=>r.data)});
+    if(res.success){
+      lastSubmission={type:'parking',id:res.id,date,place,hours:hrs,amount:parseFloat(amount)||0,receipt:rcpt,notes:document.getElementById('p-notes').value.trim(),driver_name:driver.name,vehicle:driver.vehicle_model,plate:driver.vehicle_plate,receipts:pReceiptData};
+      if(pReceiptData.length){ loading(true,'Uploading receipts...'); await uploadReceiptsForRecord('p',res.id,driver.name); loading(false); }
+      clearReceipts('p');
+      document.getElementById('success-msg').innerHTML=`Parking log submitted.<br><strong>Ref: ${res.id}</strong>`;
+      show('s-success');
+    } else alert("Error: "+(res.error||"Unknown"));
+  }catch(e){ alert("Connection failed"); }
+  loading(false);
+}
+
+// ── INVOICE ──
+function showInvoice(){
+  if(!lastSubmission){ alert("No submission data"); return; }
+  const s=lastSubmission; const now=new Date().toLocaleString();
+  let itemsHtml=''; let total=0;
+  if(s.type==='maintenance'){
+    s.items.forEach(it=>{ const amt=parseFloat(it.amount||0); total+=amt; itemsHtml+=`<div class="inv-item"><span>🔩 ${it.name}${it.qty?' ('+it.qty+')':''}</span><span>SAR ${amt.toLocaleString()}</span></div>`; });
+  } else if(s.type==='fuel'){
+    total=s.cost; itemsHtml=`<div class="inv-item"><span>⛽ Fuel — ${s.station} (${s.liters}L)</span><span>SAR ${s.cost.toLocaleString()}</span></div>`;
+  } else if(s.type==='parking'){
+    total=s.amount; itemsHtml=`<div class="inv-item"><span>🅿️ Parking — ${s.place}${s.hours?' ('+s.hours+'h)':''}</span><span>SAR ${s.amount.toLocaleString()}</span></div>`;
+  }
+  const typeLabel=s.type==='maintenance'?'Maintenance Record':s.type==='fuel'?'Fuel Log':'Parking Log';
+  document.getElementById('invoice-content').innerHTML=`
+    <div class="invoice-header">
+      <div style="font-size:28px;margin-bottom:8px">${s.type==='maintenance'?'🔧':s.type==='fuel'?'⛽':'🅿️'}</div>
+      <div class="invoice-title">${typeLabel}</div>
+      <div class="invoice-sub">Reference: ${s.id||'—'}</div>
+      <div class="invoice-sub">Printed: ${now}</div>
+    </div>
+    <div class="invoice-row"><span class="invoice-label">Driver</span><span class="invoice-val">${s.driver_name}</span></div>
+    <div class="invoice-row"><span class="invoice-label">Vehicle</span><span class="invoice-val">${s.vehicle}</span></div>
+    <div class="invoice-row"><span class="invoice-label">Plate</span><span class="invoice-val">${s.plate}</span></div>
+    <div class="invoice-row"><span class="invoice-label">Date</span><span class="invoice-val">${s.date}</span></div>
+    ${s.odometer?`<div class="invoice-row"><span class="invoice-label">Odometer</span><span class="invoice-val">${parseInt(s.odometer).toLocaleString()} km</span></div>`:''}
+    ${s.receipt?`<div class="invoice-row"><span class="invoice-label">Receipt No.</span><span class="invoice-val">${s.receipt}</span></div>`:''}
+    <div style="margin:14px 0 6px;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Details</div>
+    <div class="invoice-items">${itemsHtml}</div>
+    <div class="invoice-total"><span>Total Amount</span><span style="color:var(--accent)">SAR ${total.toLocaleString()}</span></div>
+    ${s.notes?`<div style="margin-top:12px;padding:10px;background:var(--card2);border-radius:8px;font-size:12px;color:var(--muted)">📝 ${s.notes}</div>`:''}
+    <div class="invoice-footer">Vehicle Maintenance Management System<br>Status: Pending Manager Approval</div>
+    ${s.receipts && s.receipts.length ? `
+    <div style="margin-top:16px">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📎 Receipts (${s.receipts.length})</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        ${s.receipts.map((r,i)=>`<img src="${r}" style="width:100%;max-height:300px;object-fit:contain;border-radius:8px;border:1px solid var(--border);margin-bottom:8px" alt="Receipt ${i+1}"/>`).join('')}
+      </div>
+    </div>` : ''}
+  `;
+  show('s-invoice');
+}
+function printInvoice(){
+  const content=document.getElementById('invoice-content').innerHTML;
+  const w=window.open('','_blank');
+  w.document.write(`<html><head><title>Invoice</title><style>body{font-family:sans-serif;padding:20px;max-width:400px;margin:0 auto}.invoice-header{text-align:center;border-bottom:2px solid #eee;padding-bottom:16px;margin-bottom:16px}.invoice-title{font-size:18px;font-weight:700}.invoice-sub{font-size:12px;color:#666;margin-top:3px}.invoice-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f3f4f6;font-size:13px}.invoice-label{color:#666}.invoice-val{font-weight:600}.invoice-items{background:#f8f9fa;padding:12px;border-radius:8px;margin:12px 0}.inv-item{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:1px solid #eee}.inv-item:last-child{border:none}.invoice-total{display:flex;justify-content:space-between;font-size:16px;font-weight:700;padding:12px 0;border-top:2px solid #eee}.invoice-footer{text-align:center;margin-top:16px;font-size:11px;color:#999;border-top:1px solid #eee;padding-top:12px}@media print{button{display:none}}</style></head><body>${content}</body></html>`);
+  w.document.close(); w.print();
+}
+function shareInvoice(){
+  const s=lastSubmission; if(!s) return;
+  const txt=`Vehicle Maintenance Receipt\nRef: ${s.id||'—'}\nDriver: ${s.driver_name}\nVehicle: ${s.vehicle} (${s.plate})\nDate: ${s.date}\nTotal: SAR ${(s.type==='maintenance'?s.items.reduce((t,i)=>t+(parseFloat(i.amount)||0),0):s.type==='fuel'?s.cost:s.amount).toLocaleString()}`;
+  if(navigator.share) navigator.share({title:'Vehicle Receipt',text:txt});
+  else { navigator.clipboard?.writeText(txt); alert("Copied to clipboard!"); }
+}
+
+// ── CAR WASH ──
+function showCarWashForm(){
+  document.getElementById('cw-date').value = new Date().toISOString().split('T')[0];
+  ['cw-center','cw-amount','cw-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('cw-type').value = 'Basic Wash';
+  clearReceipts('cw');
+  show('s-carwash');
+}
+
+async function submitCarWash(){
+  const date = document.getElementById('cw-date').value;
+  const amount = document.getElementById('cw-amount').value;
+  const type = document.getElementById('cw-type').value;
+  const center = document.getElementById('cw-center').value || 'Car Wash';
+  if(!date){ alert("Enter date"); return; }
+  loading(true, "Submitting car wash...");
+  const cwItems = [{name:`Car Wash — ${type} (${center})`, qty:'1', amount: parseFloat(amount)||0}];
+  try {
+    const cwReceiptData = receipts['cw'].map(r=>r.data);
+    const cwNotes = document.getElementById('cw-notes').value.trim();
+    const cwNotesWithReceipt = cwReceiptData.length ? cwNotes + (cwNotes?' | ':'')+`📎 ${cwReceiptData.length} receipt(s)` : cwNotes;
+    const res = await api('submit', {
+      driver_id: driver.id, driver_name: driver.name,
+      vehicle_plate: driver.vehicle_plate, vehicle_model: driver.vehicle_model,
+      date, odometer: 0, fuel_liters: 0, fuel_cost: 0,
+      latitude: null, longitude: null,
+      items: cwItems,
+      notes: cwNotesWithReceipt,
+      type: 'carwash',
+      receipt_count: cwReceiptData.length
+    });
+    if(res.success){
+      lastSubmission = {
+        type:'carwash', id: res.id, date,
+        type_label: type, center, amount: parseFloat(amount)||0,
+        notes: document.getElementById('cw-notes').value.trim(),
+        driver_name: driver.name, vehicle: driver.vehicle_model,
+        plate: driver.vehicle_plate, receipts: cwReceiptData
+      };
+      if(cwReceiptData.length){ loading(true,'Uploading receipts...'); await uploadReceiptsForRecord('cw',res.id,driver.name); loading(false); }
+      clearReceipts('cw');
+      document.getElementById('success-msg').innerHTML = `Car wash log submitted.<br><strong>Ref: ${res.id}</strong>`;
+      show('s-success');
+    } else alert("Error: " + (res.error||"Unknown"));
+  } catch(e){ alert("Connection failed"); }
+  loading(false);
+}
+
+// ── UPLOAD RECEIPTS ──
+async function uploadReceiptsForRecord(prefix, record_id, driver_name) {
+  const rData = receipts[prefix];
+  if (!rData || rData.length === 0) return;
+  for (let i = 0; i < rData.length; i++) {
+    try {
+      await api('uploadReceipt', {
+        action: 'uploadReceipt',
+        record_id,
+        driver_name,
+        index: i + 1,
+        image_data: rData[i].data,
+        mime_type: 'image/jpeg'
+      });
+    } catch(e) {
+      console.log('Receipt upload failed:', e);
+    }
+  }
+}
+
+// ── HISTORY ──
+async function loadHistory(){
+  try{
+    const res=await api('getPending');
+    if(res.success){ allHistory=res.data.filter(r=>r.driver_id===driver.id); renderRecentHome(); renderHistoryList('all'); }
+  }catch(e){}
+}
+function renderRecentHome(){
+  const el=document.getElementById('recent-list'); const recent=allHistory.slice(0,3);
+  if(!recent.length){ el.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">No submissions yet</div>'; return; }
+  el.innerHTML=recent.map(r=>`
+    <div class="recent-item">
+      <div class="ri-top">
+        <div class="ri-title">${r.items.map(i=>i.name).join(', ').substring(0,40)}</div>
+        <span class="badge badge-${r.status}">${r.status}</span>
+      </div>
+      <div class="ri-meta">📅 ${r.date}  •  🔢 ${parseInt(r.odometer||0).toLocaleString()} km  •  SAR ${r.items.reduce((s,i)=>s+(parseFloat(i.amount)||0),0).toLocaleString()}</div>
+    </div>`).join('');
+}
+function showHistory(){ loadHistory(); filterHistory('all',document.querySelector('.tab')); show('s-history'); }
+function filterHistory(status,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); if(el) el.classList.add('active');
+  const list=status==='all'?allHistory:allHistory.filter(r=>r.status===status);
+  const el2=document.getElementById('history-list');
+  if(!list.length){ el2.innerHTML='<div style="text-align:center;color:var(--muted);padding:30px;font-size:13px">No records</div>'; return; }
+  el2.innerHTML=list.map(r=>{
+    const cost=r.items.reduce((s,i)=>s+(parseFloat(i.amount)||0),0);
+    return `<div class="recent-item" style="margin-bottom:10px">
+      <div class="ri-top"><div class="ri-title">📅 ${r.date}</div><span class="badge badge-${r.status}">${r.status}</span></div>
+      <div class="ri-meta" style="margin-bottom:8px">🚗 ${r.vehicle_plate}  •  🔢 ${parseInt(r.odometer||0).toLocaleString()} km</div>
+      ${r.items.map(it=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px"><span>🔩 ${it.name}${it.qty?' ('+it.qty+')':''}</span><span style="color:var(--accent);font-weight:600">SAR ${parseFloat(it.amount||0).toLocaleString()}</span></div>`).join('')}
+      <div style="display:flex;justify-content:space-between;padding-top:8px;font-size:13px;font-weight:600"><span>Total</span><span style="color:var(--green)">SAR ${cost.toLocaleString()}</span></div>
+      ${r.notes?`<div style="margin-top:5px;font-size:11px;color:var(--muted)">📝 ${r.notes}</div>`:''}
+      ${r.latitude?`<div style="margin-top:5px;font-size:11px"><a href="https://maps.google.com/?q=${r.latitude},${r.longitude}" target="_blank" style="color:var(--accent)">📍 View on map</a></div>`:''}
+    </div>`;
+  }).join('');
+}
+function goHome(){ show('s-home'); loadHistory(); }
+
+window.onload=()=>{
+  const saved=localStorage.getItem('driver');
+  if(saved){ driver=JSON.parse(saved); initHome(); show('s-home'); }
+  const today=new Date().toISOString().split('T')[0];
+  ['m-date','f-date','p-date'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=today; });
+};
+</script>
+</body>
+</html>
