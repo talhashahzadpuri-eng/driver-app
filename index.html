@@ -689,7 +689,10 @@ async function submitParking(){
   const hrs=document.getElementById('p-hours').value; const rcpt=document.getElementById('p-receipt').value;
   const pItems=[{name:`Parking — ${place}`,qty:hrs?hrs+'h':'',amount:parseFloat(amount)||0}];
   try{
-    const res=await api('submit',{driver_id:driver.id,driver_name:driver.name,vehicle_plate:driver.vehicle_plate,vehicle_model:driver.vehicle_model,date,odometer:0,fuel_liters:0,fuel_cost:0,latitude:parkGps.lat,longitude:parkGps.lng,items:pItems,notes:(rcpt?`Receipt: ${rcpt}  `:'')+ document.getElementById('p-notes').value.trim(),type:'parking',receipts:receipts['p'].map(r=>r.data)});
+    const pReceiptData = receipts['p'].map(r=>r.data);
+    const pNotes = (rcpt?`Receipt: ${rcpt}  `:'') + document.getElementById('p-notes').value.trim();
+    const pNotesWithReceipt = pReceiptData.length ? pNotes + (pNotes?' | ':'')+`📎 ${pReceiptData.length} receipt(s)` : pNotes;
+    const res=await api('submit',{driver_id:driver.id,driver_name:driver.name,vehicle_plate:driver.vehicle_plate,vehicle_model:driver.vehicle_model,date,odometer:0,fuel_liters:0,fuel_cost:0,latitude:parkGps.lat,longitude:parkGps.lng,items:pItems,notes:pNotesWithReceipt,type:'parking',receipt_count:pReceiptData.length});
     if(res.success){
       lastSubmission={type:'parking',id:res.id,date,place,hours:hrs,amount:parseFloat(amount)||0,receipt:rcpt,notes:document.getElementById('p-notes').value.trim(),driver_name:driver.name,vehicle:driver.vehicle_model,plate:driver.vehicle_plate,receipts:pReceiptData};
       if(pReceiptData.length){ loading(true,'Uploading receipts...'); await uploadReceiptsForRecord('p',res.id,driver.name); loading(false); }
