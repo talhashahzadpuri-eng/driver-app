@@ -715,11 +715,14 @@ function showInvoice(){
     total=s.cost; itemsHtml=`<div class="inv-item"><span>⛽ Fuel — ${s.station} (${s.liters}L)</span><span>SAR ${s.cost.toLocaleString()}</span></div>`;
   } else if(s.type==='parking'){
     total=s.amount; itemsHtml=`<div class="inv-item"><span>🅿️ Parking — ${s.place}${s.hours?' ('+s.hours+'h)':''}</span><span>SAR ${s.amount.toLocaleString()}</span></div>`;
+  } else if(s.type==='carwash'){
+    total=parseFloat(s.amount)||0;
+    itemsHtml=`<div class="inv-item"><span>🚿 Car Wash — ${s.type_label||'Wash'} (${s.center||''})</span><span>SAR ${total.toLocaleString()}</span></div>`;
   }
-  const typeLabel=s.type==='maintenance'?'Maintenance Record':s.type==='fuel'?'Fuel Log':'Parking Log';
+  const typeLabel=s.type==='maintenance'?'Maintenance Record':s.type==='fuel'?'Fuel Log':s.type==='carwash'?'Car Wash Log':'Parking Log';
   document.getElementById('invoice-content').innerHTML=`
     <div class="invoice-header">
-      <div style="font-size:28px;margin-bottom:8px">${s.type==='maintenance'?'🔧':s.type==='fuel'?'⛽':'🅿️'}</div>
+      <div style="font-size:28px;margin-bottom:8px">${s.type==='maintenance'?'🔧':s.type==='fuel'?'⛽':s.type==='carwash'?'🚿':'🅿️'}</div>
       <div class="invoice-title">${typeLabel}</div>
       <div class="invoice-sub">Reference: ${s.id||'—'}</div>
       <div class="invoice-sub">Printed: ${now}</div>
@@ -753,9 +756,26 @@ function printInvoice(){
 }
 function shareInvoice(){
   const s=lastSubmission; if(!s) return;
-  const txt=`Vehicle Maintenance Receipt\nRef: ${s.id||'—'}\nDriver: ${s.driver_name}\nVehicle: ${s.vehicle} (${s.plate})\nDate: ${s.date}\nTotal: SAR ${(s.type==='maintenance'?s.items.reduce((t,i)=>t+(parseFloat(i.amount)||0),0):s.type==='fuel'?s.cost:s.amount).toLocaleString()}`;
-  if(navigator.share) navigator.share({title:'Vehicle Receipt',text:txt});
-  else { navigator.clipboard?.writeText(txt); alert("Copied to clipboard!"); }
+  // Calculate total
+  let total=0;
+  if(s.type==='maintenance') total=s.items.reduce((t,i)=>t+(parseFloat(i.amount)||0),0);
+  else if(s.type==='fuel') total=parseFloat(s.cost)||0;
+  else if(s.type==='carwash') total=parseFloat(s.amount)||0;
+  else total=parseFloat(s.amount)||0;
+  const typeLabel=s.type==='maintenance'?'Maintenance':s.type==='fuel'?'Fuel Log':s.type==='carwash'?'Car Wash':'Parking';
+  const txt=`${typeLabel} Receipt
+Ref: ${s.id||'—'}
+Driver: ${s.driver_name}
+Vehicle: ${s.vehicle} (${s.plate})
+Date: ${s.date}
+Total: SAR ${total.toLocaleString()}`;
+  if(navigator.share){
+    navigator.share({title:`${typeLabel} Receipt - ${s.vehicle}`, text:txt})
+      .catch(()=>{ navigator.clipboard?.writeText(txt); alert("Copied to clipboard!"); });
+  } else {
+    navigator.clipboard?.writeText(txt).then(()=>alert("Receipt copied to clipboard!"))
+      .catch(()=>alert(txt));
+  }
 }
 
 // ── CAR WASH ──
