@@ -537,6 +537,16 @@ function clearReceipts(prefix) {
   renderReceiptList(prefix);
 }
 
+// ── DATE FORMAT ──
+function formatDate(d){
+  if(!d) return '';
+  try{
+    const parts = d.split('-');
+    if(parts.length===3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    return d;
+  }catch(e){ return d; }
+}
+
 // ── LOGIN ──
 async function doLogin(){
   const id=document.getElementById('inp-id').value.trim();
@@ -619,7 +629,7 @@ async function submitMaintenance(){
       lastSubmission={type:'maintenance',id:res.id,date,odometer:parseInt(odo),items:valid,notes:document.getElementById('m-notes').value.trim(),driver_name:driver.name,vehicle:driver.vehicle_model,plate:driver.vehicle_plate,receipts:mReceiptData};
       if(mReceiptData.length){ loading(true,'Uploading receipts...'); await uploadReceiptsForRecord('m',res.id,driver.name); loading(false); }
       clearReceipts('m');
-      document.getElementById('success-msg').innerHTML=`Maintenance record submitted.<br><strong>Ref: ${res.id}</strong><br>Manager will review shortly.`;
+      document.getElementById('success-msg').innerHTML=`Maintenance record submitted.<br><strong>Ref: ${res.id}</strong><br>Date: ${formatDate(date)}<br>Manager will review shortly.`;
       show('s-success');
     } else alert("Error: "+(res.error||"Unknown"));
   }catch(e){ alert("Connection failed"); }
@@ -730,7 +740,7 @@ function showInvoice(){
     <div class="invoice-row"><span class="invoice-label">Driver</span><span class="invoice-val">${s.driver_name}</span></div>
     <div class="invoice-row"><span class="invoice-label">Vehicle</span><span class="invoice-val">${s.vehicle}</span></div>
     <div class="invoice-row"><span class="invoice-label">Plate</span><span class="invoice-val">${s.plate}</span></div>
-    <div class="invoice-row"><span class="invoice-label">Date</span><span class="invoice-val">${s.date}</span></div>
+    <div class="invoice-row"><span class="invoice-label">Date</span><span class="invoice-val">${formatDate(s.date)}</span></div>
     ${s.odometer?`<div class="invoice-row"><span class="invoice-label">Odometer</span><span class="invoice-val">${parseInt(s.odometer).toLocaleString()} km</span></div>`:''}
     ${s.receipt?`<div class="invoice-row"><span class="invoice-label">Receipt No.</span><span class="invoice-val">${s.receipt}</span></div>`:''}
     <div style="margin:14px 0 6px;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Details</div>
@@ -756,42 +766,47 @@ function printInvoice(){
 }
 async function shareInvoice(){
   const s=lastSubmission; if(!s) return;
-  // Generate PDF blob from invoice content
   try {
-    const content = document.getElementById('invoice-content').innerHTML;
-    const printWindow = window.open('','_blank');
-    printWindow.document.write(`<!DOCTYPE html><html><head><title>Invoice</title>
-    <style>
-      body{font-family:sans-serif;padding:20px;max-width:600px;margin:0 auto}
+    // Generate PDF via canvas/blob and share
+    const invoiceHtml = document.getElementById('invoice-content').innerHTML;
+    const css = `body{font-family:sans-serif;padding:20px;max-width:600px;margin:0 auto}
       .invoice-header{text-align:center;border-bottom:2px solid #eee;padding-bottom:16px;margin-bottom:16px}
-      .invoice-title{font-size:20px;font-weight:700}
-      .invoice-sub{font-size:12px;color:#666;margin-top:4px}
+      .invoice-title{font-size:20px;font-weight:700}.invoice-sub{font-size:12px;color:#666;margin-top:4px}
       .invoice-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:13px}
-      .invoice-label{color:#666}
-      .invoice-val{font-weight:600}
+      .invoice-label{color:#666}.invoice-val{font-weight:600}
       .invoice-items{background:#f8f9fa;padding:12px;border-radius:8px;margin:12px 0}
       .inv-item{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid #eee}
       .inv-item:last-child{border:none}
       .invoice-total{display:flex;justify-content:space-between;font-size:16px;font-weight:700;padding:12px 0;border-top:2px solid #eee;margin-top:8px}
-      .invoice-footer{text-align:center;margin-top:16px;font-size:11px;color:#999;border-top:1px solid #eee;padding-top:12px}
-    </style></head><body>${content}</body></html>`);
-    printWindow.document.close();
-    // Wait for load then share via print
-    printWindow.onload = () => {
-      if(navigator.share){
-        // Try to share the URL
-        navigator.share({
-          title: 'Vehicle Receipt',
-          text: 'Please find the receipt attached.',
-          url: window.location.href
-        }).catch(()=> printWindow.print());
-      } else {
-        printWindow.print();
-      }
-    };
+      .invoice-footer{text-align:center;margin-top:16px;font-size:11px;color:#999;border-top:1px solid #eee;padding-top:12px}`;
+    const fullHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Invoice</title><style>${css}</style></head><body>${invoiceHtml}</body></html>`;
+    const blob = new Blob([fullHtml], {type:'text/html'});
+    const file = new File([blob], `receipt_${s.id||'invoice'}.html`, {type:'text/html'});
+    if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file], title:'Vehicle Receipt', text:`Receipt from ${s.driver_name}`});
+    } else if(navigator.share){
+      // Share as data URL
+      const url = URL.createObjectURL(blob);
+      await navigator.share({title:'Vehicle Receipt', url});
+      setTimeout(()=>URL.revokeObjectURL(url), 5000);
+    } else {
+      // Fallback: download the file
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `receipt_${s.id||'invoice'}.html`;
+      a.click(); URL.revokeObjectURL(url);
+    }
   } catch(e) {
-    // Fallback - just print
-    printInvoice();
+    // Final fallback
+    const s2=lastSubmission;
+    let total=s2.type==='maintenance'?s2.items.reduce((t,i)=>t+(parseFloat(i.amount)||0),0):parseFloat(s2.amount||s2.cost)||0;
+    const txt=`Receipt
+Ref: ${s2.id||'—'}
+Driver: ${s2.driver_name}
+Vehicle: ${s2.vehicle}
+Date: ${s2.date}
+Total: SAR ${total.toLocaleString()}`;
+    navigator.clipboard?.writeText(txt); alert("Receipt copied!");
   }
 }
 
@@ -879,7 +894,7 @@ function renderRecentHome(){
         <div class="ri-title">${r.items.map(i=>i.name).join(', ').substring(0,40)}</div>
         <span class="badge badge-${r.status}">${r.status}</span>
       </div>
-      <div class="ri-meta">📅 ${r.date}  •  🔢 ${parseInt(r.odometer||0).toLocaleString()} km  •  SAR ${r.items.reduce((s,i)=>s+(parseFloat(i.amount)||0),0).toLocaleString()}</div>
+      <div class="ri-meta">📅 ${formatDate(r.date)}  •  🔢 ${parseInt(r.odometer||0).toLocaleString()} km  •  SAR ${r.items.reduce((s,i)=>s+(parseFloat(i.amount)||0),0).toLocaleString()}</div>
     </div>`).join('');
 }
 function showHistory(){ loadHistory(); filterHistory('all',document.querySelector('.tab')); show('s-history'); }
@@ -891,7 +906,7 @@ function filterHistory(status,el){
   el2.innerHTML=list.map(r=>{
     const cost=r.items.reduce((s,i)=>s+(parseFloat(i.amount)||0),0);
     return `<div class="recent-item" style="margin-bottom:10px">
-      <div class="ri-top"><div class="ri-title">📅 ${r.date}</div><span class="badge badge-${r.status}">${r.status}</span></div>
+      <div class="ri-top"><div class="ri-title">📅 ${formatDate(r.date)}</div><span class="badge badge-${r.status}">${r.status}</span></div>
       <div class="ri-meta" style="margin-bottom:8px">🚗 ${r.vehicle_plate}  •  🔢 ${parseInt(r.odometer||0).toLocaleString()} km</div>
       ${r.items.map(it=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px"><span>🔩 ${it.name}${it.qty?' ('+it.qty+')':''}</span><span style="color:var(--accent);font-weight:600">SAR ${parseFloat(it.amount||0).toLocaleString()}</span></div>`).join('')}
       <div style="display:flex;justify-content:space-between;padding-top:8px;font-size:13px;font-weight:600"><span>Total</span><span style="color:var(--green)">SAR ${cost.toLocaleString()}</span></div>
