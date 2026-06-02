@@ -754,27 +754,44 @@ function printInvoice(){
   w.document.write(`<html><head><title>Invoice</title><style>body{font-family:sans-serif;padding:20px;max-width:400px;margin:0 auto}.invoice-header{text-align:center;border-bottom:2px solid #eee;padding-bottom:16px;margin-bottom:16px}.invoice-title{font-size:18px;font-weight:700}.invoice-sub{font-size:12px;color:#666;margin-top:3px}.invoice-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f3f4f6;font-size:13px}.invoice-label{color:#666}.invoice-val{font-weight:600}.invoice-items{background:#f8f9fa;padding:12px;border-radius:8px;margin:12px 0}.inv-item{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:1px solid #eee}.inv-item:last-child{border:none}.invoice-total{display:flex;justify-content:space-between;font-size:16px;font-weight:700;padding:12px 0;border-top:2px solid #eee}.invoice-footer{text-align:center;margin-top:16px;font-size:11px;color:#999;border-top:1px solid #eee;padding-top:12px}@media print{button{display:none}}</style></head><body>${content}</body></html>`);
   w.document.close(); w.print();
 }
-function shareInvoice(){
+async function shareInvoice(){
   const s=lastSubmission; if(!s) return;
-  // Calculate total
-  let total=0;
-  if(s.type==='maintenance') total=s.items.reduce((t,i)=>t+(parseFloat(i.amount)||0),0);
-  else if(s.type==='fuel') total=parseFloat(s.cost)||0;
-  else if(s.type==='carwash') total=parseFloat(s.amount)||0;
-  else total=parseFloat(s.amount)||0;
-  const typeLabel=s.type==='maintenance'?'Maintenance':s.type==='fuel'?'Fuel Log':s.type==='carwash'?'Car Wash':'Parking';
-  const txt=`${typeLabel} Receipt
-Ref: ${s.id||'—'}
-Driver: ${s.driver_name}
-Vehicle: ${s.vehicle} (${s.plate})
-Date: ${s.date}
-Total: SAR ${total.toLocaleString()}`;
-  if(navigator.share){
-    navigator.share({title:`${typeLabel} Receipt - ${s.vehicle}`, text:txt})
-      .catch(()=>{ navigator.clipboard?.writeText(txt); alert("Copied to clipboard!"); });
-  } else {
-    navigator.clipboard?.writeText(txt).then(()=>alert("Receipt copied to clipboard!"))
-      .catch(()=>alert(txt));
+  // Generate PDF blob from invoice content
+  try {
+    const content = document.getElementById('invoice-content').innerHTML;
+    const printWindow = window.open('','_blank');
+    printWindow.document.write(`<!DOCTYPE html><html><head><title>Invoice</title>
+    <style>
+      body{font-family:sans-serif;padding:20px;max-width:600px;margin:0 auto}
+      .invoice-header{text-align:center;border-bottom:2px solid #eee;padding-bottom:16px;margin-bottom:16px}
+      .invoice-title{font-size:20px;font-weight:700}
+      .invoice-sub{font-size:12px;color:#666;margin-top:4px}
+      .invoice-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:13px}
+      .invoice-label{color:#666}
+      .invoice-val{font-weight:600}
+      .invoice-items{background:#f8f9fa;padding:12px;border-radius:8px;margin:12px 0}
+      .inv-item{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid #eee}
+      .inv-item:last-child{border:none}
+      .invoice-total{display:flex;justify-content:space-between;font-size:16px;font-weight:700;padding:12px 0;border-top:2px solid #eee;margin-top:8px}
+      .invoice-footer{text-align:center;margin-top:16px;font-size:11px;color:#999;border-top:1px solid #eee;padding-top:12px}
+    </style></head><body>${content}</body></html>`);
+    printWindow.document.close();
+    // Wait for load then share via print
+    printWindow.onload = () => {
+      if(navigator.share){
+        // Try to share the URL
+        navigator.share({
+          title: 'Vehicle Receipt',
+          text: 'Please find the receipt attached.',
+          url: window.location.href
+        }).catch(()=> printWindow.print());
+      } else {
+        printWindow.print();
+      }
+    };
+  } catch(e) {
+    // Fallback - just print
+    printInvoice();
   }
 }
 
