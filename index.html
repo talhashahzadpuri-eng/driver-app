@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
 <title>Driver App — Vehicle Manager</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;background:#F0F2F5;color:#1A1A2E;font-family:'Segoe UI',system-ui,sans-serif;font-size:15px}
@@ -288,7 +289,7 @@ html,body{height:100%;background:#F0F2F5;color:#1A1A2E;font-family:'Segoe UI',sy
           <input class="form-inp" id="f-cost" type="number" placeholder="0" inputmode="decimal"/>
         </div>
       </div>
-      <label class="form-lbl">Station Name</label>
+      <label class="form-lbl">Station Name (optional)</label>
       <input class="form-inp" id="f-station" placeholder="e.g. ADNOC Station"/>
     </div>
     <div class="section-card">
@@ -328,7 +329,7 @@ html,body{height:100%;background:#F0F2F5;color:#1A1A2E;font-family:'Segoe UI',sy
       <div class="sc-title">Parking Details</div>
       <label class="form-lbl">Date</label>
       <input class="form-inp" id="p-date" type="date"/>
-      <label class="form-lbl">Location / Place Name</label>
+      <label class="form-lbl">Location / Place Name (optional)</label>
       <input class="form-inp" id="p-place" placeholder="e.g. City Center Mall"/>
       <div class="form-row">
         <div>
@@ -388,7 +389,7 @@ html,body{height:100%;background:#F0F2F5;color:#1A1A2E;font-family:'Segoe UI',sy
         <option value="Full Detail">Full Detail</option>
         <option value="Polish & Wax">Polish & Wax</option>
       </select>
-      <label class="form-lbl">Wash Center Name</label>
+      <label class="form-lbl">Wash Center Name (optional)</label>
       <input class="form-inp" id="cw-center" placeholder="e.g. Quick Wash Center"/>
       <label class="form-lbl">Amount (SAR)</label>
       <input class="form-inp" id="cw-amount" type="number" placeholder="0" inputmode="decimal"/>
@@ -655,9 +656,9 @@ function getFuelLoc(){
 async function submitFuel(){
   const odo=document.getElementById('f-odo').value; const date=document.getElementById('f-date').value;
   const liters=document.getElementById('f-liters').value; const cost=document.getElementById('f-cost').value;
-  if(!date||!odo||!liters){ alert("Enter date, odometer and liters"); return; }
+  if(!date||!odo){ alert("Enter date and odometer"); return; }
   loading(true,"Submitting fuel log...");
-  const station=document.getElementById('f-station').value||'Station';
+  const station=document.getElementById('f-station').value||'Fuel Station';
   const fItems=[{name:`Fuel — ${station}`,qty:liters+'L',amount:parseFloat(cost)||0}];
   try{
     const fReceiptData = receipts['f'].map(r=>r.data);
@@ -693,8 +694,8 @@ function getParkingLoc(){
 }
 async function submitParking(){
   const date=document.getElementById('p-date').value; const amount=document.getElementById('p-amount').value;
-  const place=document.getElementById('p-place').value;
-  if(!date||!place){ alert("Enter date and location"); return; }
+  const place=document.getElementById('p-place').value||'Parking';
+  if(!date){ alert("Enter date"); return; }
   loading(true,"Submitting parking...");
   const hrs=document.getElementById('p-hours').value; const rcpt=document.getElementById('p-receipt').value;
   const pItems=[{name:`Parking — ${place}`,qty:hrs?hrs+'h':'',amount:parseFloat(amount)||0}];
@@ -766,47 +767,36 @@ function printInvoice(){
 }
 async function shareInvoice(){
   const s=lastSubmission; if(!s) return;
+  const el = document.getElementById('invoice-content');
+  loading(true, 'Generating image...');
   try {
-    // Generate PDF via canvas/blob and share
-    const invoiceHtml = document.getElementById('invoice-content').innerHTML;
-    const css = `body{font-family:sans-serif;padding:20px;max-width:600px;margin:0 auto}
-      .invoice-header{text-align:center;border-bottom:2px solid #eee;padding-bottom:16px;margin-bottom:16px}
-      .invoice-title{font-size:20px;font-weight:700}.invoice-sub{font-size:12px;color:#666;margin-top:4px}
-      .invoice-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:13px}
-      .invoice-label{color:#666}.invoice-val{font-weight:600}
-      .invoice-items{background:#f8f9fa;padding:12px;border-radius:8px;margin:12px 0}
-      .inv-item{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid #eee}
-      .inv-item:last-child{border:none}
-      .invoice-total{display:flex;justify-content:space-between;font-size:16px;font-weight:700;padding:12px 0;border-top:2px solid #eee;margin-top:8px}
-      .invoice-footer{text-align:center;margin-top:16px;font-size:11px;color:#999;border-top:1px solid #eee;padding-top:12px}`;
-    const fullHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Invoice</title><style>${css}</style></head><body>${invoiceHtml}</body></html>`;
-    const blob = new Blob([fullHtml], {type:'text/html'});
-    const file = new File([blob], `receipt_${s.id||'invoice'}.html`, {type:'text/html'});
-    if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
-      await navigator.share({files:[file], title:'Vehicle Receipt', text:`Receipt from ${s.driver_name}`});
-    } else if(navigator.share){
-      // Share as data URL
-      const url = URL.createObjectURL(blob);
-      await navigator.share({title:'Vehicle Receipt', url});
-      setTimeout(()=>URL.revokeObjectURL(url), 5000);
-    } else {
-      // Fallback: download the file
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = `receipt_${s.id||'invoice'}.html`;
-      a.click(); URL.revokeObjectURL(url);
-    }
+    const canvas = await html2canvas(el, {
+      scale: 2,
+      backgroundColor: '#ffffff',
+      useCORS: true
+    });
+    loading(false);
+    canvas.toBlob(async (blob) => {
+      const file = new File([blob], `receipt_${s.id||'invoice'}.png`, {type:'image/png'});
+      if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
+        await navigator.share({
+          files:[file],
+          title:'Vehicle Receipt',
+          text:`Receipt from ${s.driver_name} - SAR`
+        });
+      } else {
+        // Fallback: download image
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `receipt_${s.id||'invoice'}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    }, 'image/png');
   } catch(e) {
-    // Final fallback
-    const s2=lastSubmission;
-    let total=s2.type==='maintenance'?s2.items.reduce((t,i)=>t+(parseFloat(i.amount)||0),0):parseFloat(s2.amount||s2.cost)||0;
-    const txt=`Receipt
-Ref: ${s2.id||'—'}
-Driver: ${s2.driver_name}
-Vehicle: ${s2.vehicle}
-Date: ${s2.date}
-Total: SAR ${total.toLocaleString()}`;
-    navigator.clipboard?.writeText(txt); alert("Receipt copied!");
+    loading(false);
+    alert("Share failed. Please use Print/Save PDF button.");
   }
 }
 
@@ -823,7 +813,7 @@ async function submitCarWash(){
   const date = document.getElementById('cw-date').value;
   const amount = document.getElementById('cw-amount').value;
   const type = document.getElementById('cw-type').value;
-  const center = document.getElementById('cw-center').value || 'Car Wash';
+  const center = document.getElementById('cw-center').value || '';
   if(!date){ alert("Enter date"); return; }
   loading(true, "Submitting car wash...");
   const cwItems = [{name:`Car Wash — ${type} (${center})`, qty:'1', amount: parseFloat(amount)||0}];
